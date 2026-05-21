@@ -221,7 +221,7 @@ Les traces apparaissent dans Jaeger sous le service **`demo-app`**.
 
 ### Travail demandé
 
-> Fournir une **copie d'écran** de l'interface Jaeger affichant les traces générées.
+> Fournir une **copie d'écran** de l'interface Jaeger affichant les traces générées dans le canal général du serveur Discord.
 
 ---
 
