@@ -264,3 +264,66 @@ Dashboard d'observation, qui :
 - **stocke** les traces dans une base intégrée (Badger / Elasticsearch),
 - fournit une **interface graphique** sur le port `16686` pour suivre le parcours d'une requête à travers plusieurs services,
 - structure les données ainsi : *une requête = une trace = plusieurs spans liés*.
+
+---
+
+## Pour aller plus loin
+
+Trois exercices courts et progressifs. Chacun se construit sur le précédent. À chaque étape, le livrable est une **capture de l'interface Jaeger** envoyée dans le canal général du serveur Discord.
+
+### Exercice 1 — Ajouter une nouvelle route
+
+Dans `app.py`, ajouter une route `/slow` qui simule un traitement plus long (par exemple, une pause de 1 à 2 secondes), puis relancer l'application.
+
+```python
+@app.route("/slow")
+def slow():
+    time.sleep(random.uniform(1.0, 2.0))
+    return jsonify(status="done")
+```
+
+Appeler la nouvelle route depuis le navigateur et vérifier qu'elle apparaît dans Jaeger.
+
+> **Livrable** : capture Jaeger montrant la trace de `/slow` avec sa durée.
+
+### Exercice 2 — Enrichir une trace avec un attribut métier
+
+Toujours dans `app.py`, ajouter un attribut personnalisé au span de la route `/work` pour y inscrire une information utile (ex. un identifiant utilisateur fictif).
+
+```python
+from opentelemetry import trace
+
+@app.route("/work")
+def work():
+    span = trace.get_current_span()
+    span.set_attribute("user.id", random.randint(1000, 9999))
+    time.sleep(random.uniform(0.05, 0.25))
+    return jsonify(status="ok")
+```
+
+Générer quelques requêtes sur `/work` puis ouvrir une trace dans Jaeger pour repérer l'attribut `user.id`.
+
+> **Livrable** : capture Jaeger zoomée sur le panneau **Tags** d'un span affichant l'attribut `user.id`.
+
+### Exercice 3 — Tracer un appel entre deux routes
+
+Installer la librairie `requests` (auto-instrumentée par OpenTelemetry) :
+
+```bash
+pip install requests opentelemetry-instrumentation-requests
+```
+
+Ajouter une route `/chain` qui appelle `/work` en interne :
+
+```python
+import requests
+
+@app.route("/chain")
+def chain():
+    r = requests.get("http://localhost:5000/work")
+    return jsonify(downstream=r.json())
+```
+
+Relancer l'application avec `opentelemetry-instrument` et appeler `/chain`. Dans Jaeger, la trace doit contenir **deux spans imbriqués** : `/chain` (parent) et `/work` (enfant).
+
+> **Livrable** : capture Jaeger de la trace `/chain` avec ses deux spans visibles dans la timeline.
